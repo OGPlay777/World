@@ -10,11 +10,5 @@ namespace World.Model
     {
         public string Name { get; set; }
         public string Code { get; set; }
-
-        public Country(string name, string code) 
-        {
-            this.Name = name;
-            this.Code = code;
-        }
     }
 }

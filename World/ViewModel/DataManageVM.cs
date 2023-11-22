@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
+using World.Data;
+using World.Helpers;
 using World.Model;
 
 namespace World.ViewModel
 {
-    public class DataManageVM : INotifyPropertyChanged
+    public class DataManageVM : BaseVM
     {
         //properties for selected Country and Date
         private Country _selectedCountry;
@@ -19,138 +19,111 @@ namespace World.ViewModel
             set
             {
                 _selectedCountry = value;
+                SearchHolydaysAsync();
                 NotifyPropertyChanged(nameof(SelectedCountry));
             }
         }
 
-        private string _selectedDate;
+        private string _selectedDate = DateTime.Now.Year.ToString();
         public string SelectedDate
         {
             get { return _selectedDate; }
             set
             {
                 _selectedDate = value;
+                SearchHolydaysAsync();
                 NotifyPropertyChanged(nameof(SelectedDate));
+            }
+        }
+
+        private string _currentStatus;
+        public string CurrentStatus
+        {
+            get { return _currentStatus; }
+            set
+            {
+                _currentStatus = value;
+                NotifyPropertyChanged(nameof(CurrentStatus));
             }
         }
 
         public List<Holyday> Holydays { get; set; }
         public Holyday SelectedHolyday { get; set; }
+        public Window CurrentLoadedWindow { get; set; }
 
-        //populate combobox with all countries
-        private ObservableCollection<Country> _countries = DataWorker.GetCountryList();
+        private ObservableCollection<Country> _countries;
         public ObservableCollection<Country> Countries
         {
             get { return _countries; }
             set
             {
                 _countries = value;
+                NotifyPropertyChanged(nameof(Countries));
             }
         }
 
-        //command for execute holydays from API
-        private RelayCommand _getHolydays;
-        public RelayCommand GetHolydays
-        {
-            get
-            {
-                return _getHolydays ?? new RelayCommand(obj =>
-                {
-                    GetHolydaysMethod(obj);
-                }
-                );
-            }
-        }
-
-        //command for save selected holyday in integrated DB
-        private RelayCommand _saveSelectedHolyday;
-        public RelayCommand SaveSelectedHolyday
-        {
-            get
-            {
-                return _saveSelectedHolyday ?? new RelayCommand(obj =>
-                {
-                    SaveHolydayMethod();
-                }
-                );
-            }
-        }
-
-        //method for executing holydays from API
-        public void GetHolydaysMethod(object obj)
-        {
-            Window wnd = obj as Window;
-            int errorcount = 0;
-
-            if (!Countries.Contains(SelectedCountry))
-            {
-                SetRedBlockControll(wnd, "CountryCombo", "Valsts ievadīts kļūdaini vai nav atrasts");
-                errorcount++;
-            }
-            else
-            {
-                SetTransparentBlockControll(wnd, "CountryCombo");
-
-            }
-
-            if (SelectedDate == null || SelectedDate.Length < 4 || SelectedDate.Length > 4 || !int.TryParse(SelectedDate, out _))
-            {
-                SetRedBlockControll(wnd, "DateBox", "Šis lauks ir obligāts, formats ir (gggg)");
-                errorcount++;
-            }
-            else
-            {
-                SetTransparentBlockControll(wnd, "DateBox");
-
-            }
-            if (errorcount < 1)
-            {
-                Holydays = DataWorker.GetAllHolydays(SelectedCountry.Code, SelectedDate);
-                NotifyPropertyChanged(nameof(Holydays));
-            }
-        }
+        public RelayCommand IsLoadedCommand => new(async wnd => IsLoadedMethod((Window)wnd));
+        public RelayCommand GetHolydays => new(wnd => SearchHolydaysAsync());
+        public RelayCommand SaveSelectedHolyday => new(_ => SaveHolydayMethod());
 
         public void SaveHolydayMethod()
         {
             string resultStr = string.Empty;
-
             if (SelectedHolyday == null)
             {
                 MessageBox.Show("Svētku diena nav izvēlēta");
             }
             else
             {
-                resultStr = DataWorker.SaveSelectedHolyday(SelectedHolyday, SelectedCountry.Name);
+                //resultStr = DataWorker.SaveSelectedHolyday(SelectedHolyday, SelectedCountry.Name);
                 MessageBox.Show(resultStr);
             }
-
-            
-
         }
 
-        public static void SetRedBlockControll(Window wnd, string textBlockName, string tooltip)
+        private async Task SearchHolydaysAsync()
         {
-            Control textBlock = wnd.FindName(textBlockName) as Control;
-            textBlock.Background = Brushes.IndianRed;
-            textBlock.ToolTip = $"{tooltip}";
-        }
-
-        public static void SetTransparentBlockControll(Window wnd, string textBlockName)
-        {
-            Control textBlock = wnd.FindName(textBlockName) as Control;
-            textBlock.Background = Brushes.Transparent;
-            textBlock.ToolTip = null;
-        }
-
-        
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void NotifyPropertyChanged(String propertyName)
-        {
-            if (PropertyChanged != null)
+            int errorcount = 0;
+            if (!Countries.Contains(SelectedCountry))
             {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                WindControl.SetRedBlockControll(CurrentLoadedWindow, "CountryCombo", "Valsts ievadīts kļūdaini vai nav atrasts");
+                errorcount++;
+            }
+            else
+            {
+                WindControl.SetTransparentBlockControll(CurrentLoadedWindow, "CountryCombo");
+            }
+            if (SelectedDate == null || !int.TryParse(SelectedDate, out _))
+            {
+                WindControl.SetRedBlockControll(CurrentLoadedWindow, "DateBox", "Šis lauks ir obligāts, un jābūt cipariem");
+                errorcount++;
+            }
+            else
+            {
+                WindControl.SetTransparentBlockControll(CurrentLoadedWindow, "DateBox");
+            }
+            if (errorcount < 1)
+            {
+                HolydayReponseJson holydayReponseJsonObj = await ApiWorker.GetAllHolydays(SelectedCountry.Code, SelectedDate);
+                Holydays = holydayReponseJsonObj.AllHolydaysList;
+                CurrentStatus = $"Current holyday list loading status - {holydayReponseJsonObj.ResponseCode}";
+                NotifyPropertyChanged(nameof(Holydays));
             }
         }
+
+        private void HolydayRequestHandler(HolydayReponseJson holydayReponseJsonObj)
+        {
+
+        }
+
+        private async Task IsLoadedMethod(Window wnd)
+        {
+            CurrentLoadedWindow = wnd;
+            CountryResponseJson countryResponseJsonObject = await ApiWorker.GetAllCountries();
+            Countries = new ObservableCollection<Country>(countryResponseJsonObject.AllCountriesList);
+            CurrentStatus = $"Current country list loading status - {countryResponseJsonObject.ResponseCode}";
+        }
+
+
+
     }
 }

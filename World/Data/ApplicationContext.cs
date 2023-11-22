@@ -6,7 +6,7 @@ namespace World.Data
 {
     public class ApplicationContext : DbContext
     {
-        public DbSet<Holyday> Holydays { get; set; }
+        public DbSet<DbModel_Holyday> Holydays { get; set; }
 
         public ApplicationContext()
         {

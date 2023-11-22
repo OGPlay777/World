@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace World.Model
+namespace World.Helpers
 {
     public class RelayCommand : ICommand
     {

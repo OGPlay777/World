@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using World.ViewModel;
-using Newtonsoft.Json;
 
 namespace World.View
 {

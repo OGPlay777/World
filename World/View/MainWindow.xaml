@@ -4,15 +4,22 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:viewmodel="clr-namespace:World.ViewModel" d:DataContext="{d:DesignInstance Type=viewmodel:DataManageVM}"
         mc:Ignorable="d"
         Name="CountryHolydaysWin" Height="450" Width="1000" >
+    <behaviors:Interaction.Triggers>
+        <behaviors:EventTrigger EventName="Loaded">
+            <behaviors:InvokeCommandAction Command="{Binding IsLoadedCommand}" CommandParameter="{Binding ElementName=CountryHolydaysWin}" />
+        </behaviors:EventTrigger>
+    </behaviors:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="30" />
+            <RowDefinition Height="15"/>
         </Grid.RowDefinitions>
-        
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250" />
             <ColumnDefinition />
@@ -22,21 +29,25 @@
             <Label Content="Valsts svētku extractor 2000" FontFamily="Dubai" VerticalAlignment="Center" HorizontalAlignment="Center" />
 
             <ComboBox Name="CountryCombo" MaxWidth="180" Style="{StaticResource MaterialDesignFloatingHintComboBox}" materialDesign:HintAssist.Hint="Izvēlējies valsts" IsTextSearchEnabled="True" IsEditable="True"  IsTextSearchCaseSensitive="False"  ItemsSource="{Binding Countries, UpdateSourceTrigger=PropertyChanged}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedCountry}" />
-            <TextBox Name="DateBox" MaxWidth="180" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:HintAssist.Hint="Norādi gads, piem. 2023" Text="{Binding SelectedDate}" />
+            <TextBox Name="DateBox" MaxWidth="180" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:HintAssist.Hint="Norādi gads, piem. 2023" Text="{Binding SelectedDate, UpdateSourceTrigger=PropertyChanged}" />
 
 
         </StackPanel>
-        <Button Content="Aiziet" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1" Background="#FF10A50C" Margin="2" Command="{Binding GetHolydays}" CommandParameter="{Binding ElementName=CountryHolydaysWin}"/>
+        <Button Content="Aiziet" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1" Background="#FF10A50C" Margin="2,2,2,0" Command="{Binding GetHolydays}" CommandParameter="{Binding ElementName=CountryHolydaysWin}"/>
 
-        <ListView Grid.Column="1" Grid.Row="0" x:Name="HolydayListView" FontSize="12" FontFamily="Dubai" ItemsSource="{Binding Holydays, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedHolyday}" DisplayMemberPath="" >
+        <ListView Grid.Column="1" Grid.Row="0" x:Name="HolydayListView" FontSize="12" FontFamily="Dubai" ItemsSource="{Binding Holydays, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedHolyday}" >
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Datums" DisplayMemberBinding="{Binding Path=Date,StringFormat=dd-MM-yyyy}"/>
+                    <GridViewColumn Header="Datums" DisplayMemberBinding="{Binding Path=Date}"/>
                     <GridViewColumn Header="Lokalais nosaukums" DisplayMemberBinding="{Binding Path=LocalName}"/>
                     <GridViewColumn Header="Internacionalais nosaukums" DisplayMemberBinding="{Binding Path=Name}"/>
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button Content="Saglabāt svētku dienu" Width="200" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Background="#FF10A50C" Margin="2" Command="{Binding SaveSelectedHolyday}"/>
+        <Button Content="Saglabāt svētku dienu" Width="200" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Background="#FF10A50C" Margin="2,2,2,0" Command="{Binding SaveSelectedHolyday}"/>
+
+        <StatusBar  Grid.Row="2" Height="15">
+            <TextBlock Name="StatusBarTextBlock" FontSize="9" VerticalAlignment="Center" HorizontalAlignment="Center" Text="{Binding CurrentStatus}" Cursor=""/>
+        </StatusBar>
     </Grid>
 </Window>
